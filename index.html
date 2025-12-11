@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>회원가입</title>
+  <style>
+    :root{--bg:#f6f8fb;--card:#ffffff;--accent:#4f46e5;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; background:var(--bg); margin:0; color:#111}
+    .wrap{min-height:100vh; display:grid; place-items:center; padding:32px}
+    .card{width:100%; max-width:520px; background:var(--card); border-radius:12px; box-shadow:0 10px 30px rgba(15,23,42,0.08); padding:28px}
+    h1{margin:0 0 8px; font-size:20px}
+    p.lead{margin:0 0 18px; color:var(--muted)}
+    form{display:grid; gap:12px}
+    label{font-size:13px; color:#111; display:block; margin-bottom:6px}
+    input[type=text], input[type=email], input[type=password], input[type=tel]{width:100%; padding:10px 12px; border:1px solid #e6e9ef; border-radius:8px; font-size:14px}
+    .row{display:flex; gap:12px}
+    .half{flex:1}
+    .hint{font-size:12px; color:var(--muted)}
+    .error{color:#b91c1c; font-size:13px}
+    .actions{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:6px}
+    button{background:var(--accent); color:white; border:0; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600}
+    button[disabled]{opacity:0.6; cursor:not-allowed}
+    .password-meter{height:8px; border-radius:6px; background:#f1f5f9; overflow:hidden}
+    .password-meter > i{display:block; height:100%; width:0%; background:linear-gradient(90deg,#ef4444,#f59e0b,#10b981)}
+    .success{border:1px solid #10b981; padding:12px; border-radius:8px; color:#065f46; display:none}
+    .small{font-size:13px}
+    .terms{display:flex; align-items:center; gap:8px}
+    .toggle-pass{font-size:12px; background:transparent; border:0; color:var(--muted); cursor:pointer}
+    @media (max-width:520px){.card{padding:20px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <main class="card" role="main">
+      <h1>회원가입</h1>
+      <p class="lead">새 계정을 만들어 빠르게 시작하세요. (클라이언트 측 유효성 검사 포함)</p>
+
+      <div id="success" class="success" role="status" aria-live="polite"></div>
+
+      <form id="signupForm" novalidate>
+        <div>
+          <label for="username">사용자 이름</label>
+          <input id="username" name="username" type="text" autocomplete="username" required minlength="3" placeholder="영문/숫자 3자 이상" />
+          <div id="usernameError" class="error" aria-live="polite"></div>
+        </div>
+
+        <div>
+          <label for="email">이메일</label>
+          <input id="email" name="email" type="email" autocomplete="email" required placeholder="example@domain.com" />
+          <div id="emailError" class="error" aria-live="polite"></div>
+        </div>
+
+        <div class="row">
+          <div class="half">
+            <label for="password">비밀번호</label>
+            <input id="password" name="password" type="password" autocomplete="new-password" required placeholder="8자 이상, 숫자/문자 혼합 권장" />
+            <div class="password-meter" aria-hidden="true" style="margin-top:8px"><i id="pwMeter"></i></div>
+            <div id="passwordHint" class="hint small">안전도: <span id="pwText">-</span></div>
+            <div id="passwordError" class="error" aria-live="polite"></div>
+          </div>
+
+          <div class="half">
+            <label for="password2">비밀번호 확인</label>
+            <input id="password2" name="password2" type="password" autocomplete="new-password" required placeholder="비밀번호 재입력" />
+            <div style="margin-top:8px"><button type="button" class="toggle-pass" id="togglePass">비밀번호 보기</button></div>
+            <div id="password2Error" class="error" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div>
+          <label for="phone">전화번호 (선택)</label>
+          <input id="phone" name="phone" type="tel" autocomplete="tel" placeholder="010-1234-5678" />
+          <div id="phoneError" class="error" aria-live="polite"></div>
+        </div>
+
+        <label class="terms small"><input id="agree" name="agree" type="checkbox" required /> <span>서비스 이용약관 및 개인정보처리방침에 동의합니다.</span></label>
+        <div id="agreeError" class="error" aria-live="polite"></div>
+
+        <div class="actions">
+          <div class="small hint">이미 계정이 있으신가요? <a href="#" id="loginLink">로그인</a></div>
+          <button type="submit" id="submitBtn">회원가입</button>
+        </div>
+      </form>
+
+      <p style="margin-top:16px" class="hint small">※ 이 페이지는 예시입니다. 실제 서비스에선 서버 측 유효성 검사와 HTTPS, 비밀번호 해시화가 필수입니다.</p>
+    </main>
+  </div>
+
+  <script>
+    // 간단한 클라이언트 측 유효성 검사 및 동작
+    const form = document.getElementById('signupForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const successBox = document.getElementById('success');
+
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const password2 = document.getElementById('password2');
+    const phone = document.getElementById('phone');
+    const agree = document.getElementById('agree');
+
+    const usernameError = document.getElementById('usernameError');
+    const emailError = document.getElementById('emailError');
+    const passwordError = document.getElementById('passwordError');
+    const password2Error = document.getElementById('password2Error');
+    const phoneError = document.getElementById('phoneError');
+    const agreeError = document.getElementById('agreeError');
+
+    const pwMeter = document.getElementById('pwMeter');
+    const pwText = document.getElementById('pwText');
+    const togglePass = document.getElementById('togglePass');
+
+    function validateEmail(v){
+      // 간단한 이메일 정규식 (완벽하지 않음)
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+    }
+
+    function checkPasswordStrength(pw){
+      let score = 0;
+      if(pw.length >= 8) score += 1;
+      if(/[A-Z]/.test(pw)) score += 1;
+      if(/[0-9]/.test(pw)) score += 1;
+      if(/[^A-Za-z0-9]/.test(pw)) score += 1;
+      return score; // 0..4
+    }
+
+    password.addEventListener('input', ()=>{
+      const s = checkPasswordStrength(password.value);
+      const pct = (s/4)*100;
+      pwMeter.style.width = pct + '%';
+      pwText.textContent = ['약함','보통','좋음','매우좋음'][Math.max(0,s-1)] || '-';
+
+      // 실시간 에러 해제
+      if(password.value.length >= 8) passwordError.textContent = '';
+    });
+
+    togglePass.addEventListener('click', ()=>{
+      const t = password.type === 'password' ? 'text' : 'password';
+      password.type = t; password2.type = t;
+      togglePass.textContent = t === 'text' ? '비밀번호 숨기기' : '비밀번호 보기';
+    });
+
+    function clearErrors(){
+      [usernameError,emailError,passwordError,password2Error,phoneError,agreeError].forEach(e=>e.textContent='');
+      successBox.style.display = 'none';
+    }
+
+    form.addEventListener('submit', (ev)=>{
+      ev.preventDefault();
+      clearErrors();
+
+      let ok = true;
+
+      // 사용자 이름
+      if(username.value.trim().length < 3){ usernameError.textContent = '사용자 이름은 최소 3자 이상입니다.'; ok = false }
+      if(!/^[a-zA-Z0-9_\-]{3,}$/.test(username.value.trim())){ usernameError.textContent = '사용자 이름에 특수문자(공백 제외)는 _,- 만 허용됩니다.'; ok = false }
+
+      // 이메일
+      if(!validateEmail(email.value.trim())){ emailError.textContent = '유효한 이메일을 입력하세요.'; ok = false }
+
+      // 비밀번호
+      if(password.value.length < 8){ passwordError.textContent = '비밀번호는 최소 8자 이상이어야 합니다.'; ok = false }
+      if(password.value !== password2.value){ password2Error.textContent = '비밀번호가 일치하지 않습니다.'; ok = false }
+
+      // 전화번호 (선택이지만 입력되면 형식 검사)
+      if(phone.value.trim().length){
+        if(!/^\d{2,3}-?\d{3,4}-?\d{4}$/.test(phone.value.trim())){ phoneError.textContent = '전화번호 형식이 올바르지 않습니다 (예: 010-1234-5678).'; ok = false }
+      }
+
+      // 동의
+      if(!agree.checked){ agreeError.textContent = '약관에 동의해야 합니다.'; ok = false }
+
+      if(!ok) return;
+
+      // 여기서 실제로는 서버에 POST 요청을 보냅니다. (예시로 성공 메시지 표시)
+      submitBtn.disabled = true;
+      submitBtn.textContent = '전송 중...';
+
+      // 예시: 서버 통신 시나리오(실제 서비스에서는 fetch로 백엔드에 요청)
+      setTimeout(()=>{
+        submitBtn.disabled = false;
+        submitBtn.textContent = '회원가입';
+        successBox.style.display = 'block';
+        successBox.textContent = `축하합니다, ${username.value.trim()}님! 회원가입이 완료되었습니다.`;
+
+        // 폼 초기화(원하면 제거)
+        form.reset();
+        pwMeter.style.width = '0%';
+        pwText.textContent = '-';
+      }, 900);
+    });
+
+    // 접근성: Enter 키로 서브밋
+    [username,email,password,password2,phone].forEach(el => el.addEventListener('keypress', (e)=>{
+      if(e.key === 'Enter') form.requestSubmit();
+    }));
+  </script>
+</body>
+</html>
